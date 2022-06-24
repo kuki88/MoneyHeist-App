@@ -18,9 +18,8 @@ namespace MonesyHeist_App.Data.ViewModels
     public class MemberVM
     {
         public string Email { get; set; }
-
         public string Name { get; set; }
-        public List<Skill> Skills { get; set; }
+        public List<SkillsVM> SkillsList { get; set; }
         public string? MainSkill { get; set; }
 
         public StatusEnum Status { get; set; }

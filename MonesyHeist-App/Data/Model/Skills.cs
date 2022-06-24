@@ -1,9 +1,16 @@
-﻿namespace MonesyHeist_App.Data.Model
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace MonesyHeist_App.Data.Model
 {
     public class Skills
     {
-        public int Id { get; set; }
-        public Skill Name { get; set; }
+        [Key]
+        public int SkillsId { get; set; }
+        public int MemberId { get; set; }
+        public Member Member { get; set; }
+        public int SkillId { get; set; }
+        public Skill Skill { get; set; }
         public string Level { get; set; }
     }
 }

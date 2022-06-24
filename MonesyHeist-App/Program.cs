@@ -15,6 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(
     options => options.UseSqlServer("Data Source=KUKICRO\\SQLEXPRESS;Initial Catalog=MoneyHeist;Integrated Security=True;Pooling=False")
 );
 builder.Services.AddScoped<MemberService>();
+builder.Services.AddScoped<HeistService>();
 
 
 var app = builder.Build();

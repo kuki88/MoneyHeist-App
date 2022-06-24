@@ -2,9 +2,10 @@
 
 namespace MonesyHeist_App.Data.ViewModels
 {
-    public class SkillsVM
+    public class HeistSkillsVM
     {
-        public string Name { get; set; }
+        public string Skill { get; set; }
         public string Level { get; set; }
+        public int Members { get; set; }
     }
 }

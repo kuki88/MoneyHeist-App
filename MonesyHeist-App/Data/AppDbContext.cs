@@ -13,9 +13,18 @@ namespace MonesyHeist_App.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Member>().HasIndex(u => u.Email).IsUnique();
+            builder.Entity<Heist>().HasIndex(u => u.Name).IsUnique();
+            //builder.Entity<Skills>()
+            //    .HasOne(p => p.Member)
+            //    .WithMany(b => b.SkillsList)
+            //    .HasForeignKey(p => p.MemberId)
+            //    .HasForeignKey(p => p.SkillId);
         }
 
         public DbSet<Member> Members { get; set; }
-        public DbSet<Skill> Skills { get; set; }
+        public DbSet<Skills> Skills { get; set; }
+        public DbSet<Skill> Skill { get; set; }
+        public DbSet<Heist> Heists { get; set; }
+        public DbSet<HeistSkills> HeistSkills { get; set; }
     }
 }

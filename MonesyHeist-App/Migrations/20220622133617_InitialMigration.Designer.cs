@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MonesyHeist_App.Data;
 
@@ -11,9 +12,10 @@ using MonesyHeist_App.Data;
 namespace MonesyHeist_App.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220622133617_InitialMigration")]
+    partial class InitialMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,66 +23,6 @@ namespace MonesyHeist_App.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
-
-            modelBuilder.Entity("MonesyHeist_App.Data.Model.Heist", b =>
-                {
-                    b.Property<int>("HeistId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HeistId"), 1L, 1);
-
-                    b.Property<DateTime>("EndTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("HeistId");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("Heists");
-                });
-
-            modelBuilder.Entity("MonesyHeist_App.Data.Model.HeistSkills", b =>
-                {
-                    b.Property<int>("HeistSkillId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HeistSkillId"), 1L, 1);
-
-                    b.Property<int>("HeistId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Level")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Members")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SkillId")
-                        .HasColumnType("int");
-
-                    b.HasKey("HeistSkillId");
-
-                    b.HasIndex("HeistId");
-
-                    b.HasIndex("SkillId");
-
-                    b.ToTable("HeistSkills");
-                });
 
             modelBuilder.Entity("MonesyHeist_App.Data.Model.Member", b =>
                 {
@@ -94,8 +36,8 @@ namespace MonesyHeist_App.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("MainSkill")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("MainSkillSkillId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -111,6 +53,8 @@ namespace MonesyHeist_App.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("MainSkillSkillId");
 
                     b.ToTable("Members");
                 });
@@ -159,23 +103,13 @@ namespace MonesyHeist_App.Migrations
                     b.ToTable("Skills");
                 });
 
-            modelBuilder.Entity("MonesyHeist_App.Data.Model.HeistSkills", b =>
+            modelBuilder.Entity("MonesyHeist_App.Data.Model.Member", b =>
                 {
-                    b.HasOne("MonesyHeist_App.Data.Model.Heist", "Heist")
-                        .WithMany("Skills")
-                        .HasForeignKey("HeistId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MonesyHeist_App.Data.Model.Skill", "Skill")
+                    b.HasOne("MonesyHeist_App.Data.Model.Skill", "MainSkill")
                         .WithMany()
-                        .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("MainSkillSkillId");
 
-                    b.Navigation("Heist");
-
-                    b.Navigation("Skill");
+                    b.Navigation("MainSkill");
                 });
 
             modelBuilder.Entity("MonesyHeist_App.Data.Model.Skills", b =>
@@ -195,11 +129,6 @@ namespace MonesyHeist_App.Migrations
                     b.Navigation("Member");
 
                     b.Navigation("Skill");
-                });
-
-            modelBuilder.Entity("MonesyHeist_App.Data.Model.Heist", b =>
-                {
-                    b.Navigation("Skills");
                 });
 
             modelBuilder.Entity("MonesyHeist_App.Data.Model.Member", b =>
