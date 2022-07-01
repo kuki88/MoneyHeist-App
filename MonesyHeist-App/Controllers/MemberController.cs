@@ -9,12 +9,12 @@ namespace MonesyHeist_App.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class MembersController : ControllerBase
+    public class MemberController : ControllerBase
     {
         private readonly AppDbContext _context;
         public MemberService _memberService;
 
-        public MembersController(AppDbContext context, MemberService memberService)
+        public MemberController(AppDbContext context, MemberService memberService)
         {
             _context = context;
             _memberService = memberService;
@@ -22,32 +22,32 @@ namespace MonesyHeist_App.Controllers
 
 
 
-        [HttpPost("member")]
-        public IActionResult AddMember([FromBody]MemberVM member)
+        [HttpPost]
+        public async Task<IActionResult> AddMember([FromBody]MemberVM member)
         {
             try
             {
-                _memberService.AddMember(member);
+                await _memberService.AddMember(member);
                 return Ok(member);
             }
             catch (Exception ex)
             {
-                throw;
+                return BadRequest(ex.Message);
             }
         }
 
-        [HttpGet("member")]
-        public IActionResult GetMembers()
+        [HttpGet]
+        public async Task<IActionResult> GetMembers()
         {
-            var members = _memberService.GetMembers();
+            var members = await _memberService.GetMembers();
             return Ok(members);
         }
-        [HttpPut("member/{memberId}/skills")]
-        public IActionResult UpdateMemberSkills(int memberId, [FromBody]MemberSkillsVM skills)
+        [HttpPut("{memberId}/skills")]
+        public async Task<IActionResult> UpdateMemberSkills(int memberId, [FromBody]MemberSkillsVM skills)
         {
             try
             {
-                var updateMember = _memberService.UpdateMemberSkills(memberId, skills);
+                var updateMember = await _memberService.UpdateMemberSkills(memberId, skills);
                 return NoContent();
             }
             catch (MainSkillException msEx)
@@ -60,12 +60,12 @@ namespace MonesyHeist_App.Controllers
             }
         }
 
-        [HttpDelete("member/{member_id}/skills/{skill_name}")]
-        public IActionResult DeleteMemberSkill(int member_id, string skill_name)
+        [HttpDelete("{member_id}/skills/{skill_name}")]
+        public async Task<IActionResult> DeleteMemberSkill(int member_id, string skill_name)
         {
             try
             {
-                _memberService.DeleteMemberSkill(member_id, skill_name);
+                await _memberService.DeleteMemberSkill(member_id, skill_name);
                 return NoContent();
             }
             catch (Exception ex)

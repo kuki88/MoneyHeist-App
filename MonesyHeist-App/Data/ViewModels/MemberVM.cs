@@ -2,19 +2,6 @@
 
 namespace MonesyHeist_App.Data.ViewModels
 {
-    public enum SexEnum
-    {
-        F,
-        M
-    }
-    public enum StatusEnum
-    {
-        AVAILABLE,
-        EXPIRED,
-        INCARCARATED,
-        RETIRED
-    }
-
     public class MemberVM
     {
         public string Email { get; set; }
@@ -22,8 +9,8 @@ namespace MonesyHeist_App.Data.ViewModels
         public List<SkillsVM> SkillsList { get; set; }
         public string? MainSkill { get; set; }
 
-        public StatusEnum Status { get; set; }
-        public SexEnum Sex { get; set; }
+        public string Status { get; set; }
+        public char Sex { get; set; }
 
     }
 }

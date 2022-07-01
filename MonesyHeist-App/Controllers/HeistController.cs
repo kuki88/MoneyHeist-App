@@ -20,17 +20,17 @@ namespace MonesyHeist_App.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetHeists()
+        public async Task<IActionResult> GetHeists()
         {
-            return Ok(_heistService.GetHeists());
+            return Ok(await _heistService.GetHeists());
         }
 
-        [HttpPost("heist")]
-        public IActionResult AddHeist([FromBody]HeistVM heist)
+        [HttpPost]
+        public async Task<IActionResult> AddHeist([FromBody]HeistVM heist)
         {
             try
             {
-                var _heist = _heistService.AddHeist(heist);
+                var _heist = await _heistService.AddHeist(heist);
                 return Ok(_heist);
             }
             catch (Exception ex)
@@ -39,13 +39,27 @@ namespace MonesyHeist_App.Controllers
             }
         }
 
-        [HttpPut("heist/{id}/skills")]
-        public IActionResult UpdateHeistSkills(int id, [FromBody] List<HeistSkillsVM> heistSkills)
+        [HttpPut("/{id}/skills")]
+        public async Task<IActionResult> UpdateHeistSkills(int id, [FromBody] List<HeistSkillsVM> heistSkills)
         {
             try
             {
-                _heistService.UpdateHeistSkills(id, heistSkills);
+                await _heistService.UpdateHeistSkills(id, heistSkills);
                 return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [HttpGet("/{heistId}/eligible_members")]
+        public async Task<IActionResult> GetEligibleMembers(int heistId)
+        {
+            try
+            {
+                var list = await _heistService.GetEligibleMembers(heistId);
+                return Ok(list);
             }
             catch (Exception ex)
             {

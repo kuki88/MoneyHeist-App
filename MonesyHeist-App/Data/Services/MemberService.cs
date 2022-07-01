@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MonesyHeist_App.Data.Exceptions;
 using MonesyHeist_App.Data.Model;
 using MonesyHeist_App.Data.ViewModels;
@@ -24,12 +25,12 @@ namespace MonesyHeist_App.Data.Services
 
 
 
-        public List<Member> GetMembers()
+        public async Task<List<Member>> GetMembers()
         {
-            return _context.Members.ToList();
+            return _context.Members.Include(x => x.SkillsList).ToList();
         }
 
-        public Member AddMember (MemberVM member)
+        public async Task<Member> AddMember (MemberVM member)
         {
             var skillList = new List<Skills>();
 
@@ -37,31 +38,25 @@ namespace MonesyHeist_App.Data.Services
             {
                 Email = member.Email,
                 Name = member.Name,
-                //SkillsList = member.SkillsList,
-                MainSkill = member.MainSkill,
-                Status = (Model.StatusEnum)member.Status,
-                Sex = (Model.SexEnum)member.Sex
-            };
-
-            foreach (var skill in member.SkillsList)
-            {
-                skillList.Add(new Skills()
+                SkillsList = member.SkillsList.Select(x => new Skills()
                 {
-                    Member = _member,
-                    Skill = SkillList.FirstOrDefault(s => s.Name == skill.Name),
-                    Level = skill.Level,
-                });
-            }
+                    Skill = SkillList.FirstOrDefault(s => s.Name == x.Name),
+                    Level = x.Level,
+                }).ToList(),
+                MainSkill = member.MainSkill,
+                Status = checkStatus(member.Status)? member.Status : throw new Exception("Status not allowed!"),
+                Sex = checkSex(member.Sex) ? member.Sex : throw new Exception("Sex not allowed!")
+            };
 
             _member.SkillsList = skillList;
 
             _context.Members.Add(_member);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return _member;
         }
 
-        public List<Skills> UpdateMemberSkills (int id, [FromBody]MemberSkillsVM skills)
+        public async Task<List<Skills>> UpdateMemberSkills (int id, [FromBody]MemberSkillsVM skills)
         {
             List<Skills> _newList = new List<Skills>();
             bool hasMainSkill = false;
@@ -103,12 +98,12 @@ namespace MonesyHeist_App.Data.Services
             if (hasMainSkill) _member.MainSkill = skills.MainSkill;
             else throw new MainSkillException("Main skill not in skills array");
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return _newList;
         }
 
-        public void DeleteMemberSkill(int id, string skillName)  
+        public async Task DeleteMemberSkill(int id, string skillName)  
         {
             var _mem = _context.Members.FirstOrDefault(m => m.MemberId == id);
             if (_mem != null)
@@ -127,7 +122,25 @@ namespace MonesyHeist_App.Data.Services
                 throw new Exception("Member not found!");
             }
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+        }
+
+        private static bool checkStatus(string status)
+        {
+            foreach (var st in Global._statusList)
+            {
+                if (status.ToUpper() == st) return true;
+            }
+            return false;
+        }
+
+        private static bool checkSex(char sex)
+        {
+            foreach (var se in Global._sexList)
+            {
+                if (sex == se) return true;
+            }
+            return false;
         }
     }
 }

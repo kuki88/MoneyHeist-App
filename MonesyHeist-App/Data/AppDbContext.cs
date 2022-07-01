@@ -14,11 +14,6 @@ namespace MonesyHeist_App.Data
         {
             builder.Entity<Member>().HasIndex(u => u.Email).IsUnique();
             builder.Entity<Heist>().HasIndex(u => u.Name).IsUnique();
-            //builder.Entity<Skills>()
-            //    .HasOne(p => p.Member)
-            //    .WithMany(b => b.SkillsList)
-            //    .HasForeignKey(p => p.MemberId)
-            //    .HasForeignKey(p => p.SkillId);
         }
 
         public DbSet<Member> Members { get; set; }

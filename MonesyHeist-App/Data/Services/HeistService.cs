@@ -1,4 +1,5 @@
-﻿using MonesyHeist_App.Data.Model;
+﻿using Microsoft.EntityFrameworkCore;
+using MonesyHeist_App.Data.Model;
 using MonesyHeist_App.Data.ViewModels;
 
 namespace MonesyHeist_App.Data.Services
@@ -11,6 +12,13 @@ namespace MonesyHeist_App.Data.Services
         private List<string> _skillName = new List<string>();
         private List<Heist> _heistList = new List<Heist>();
         private List<Skill> _skillList = new List<Skill>();
+        //private List<string> _statusList = new List<string>()
+        //{
+        //    "AVAILABLE",
+        //    "EXPIRED",
+        //    "INCARCERATED",
+        //    "RETIRED"
+        //};
 
         public HeistService(AppDbContext context)
         {
@@ -27,12 +35,37 @@ namespace MonesyHeist_App.Data.Services
             }
         }
 
-        public List<Heist> GetHeists()
+        public async Task<List<Heist>> GetHeists()
         {
-            return _context.Heists.ToList();
+            return _context.Heists.Include(x => x.Skills).ToList();
+        }
+        public async Task<List<Member>> GetEligibleMembers(int heistId)
+        {
+            List<Member> _list = new List<Member>();
+            var hei = GetHeistById(heistId);
+
+            if (hei == null) throw new Exception("Heist does not exist!");
+
+            var members = _context.Members.Where(x => x.Status == "AVAILABLE" || x.Status == "RETIRED").ToList();
+            foreach (var mem in members)
+            {
+                foreach (var sk in mem.SkillsList)
+                {
+                    foreach (var hSk in hei.Skills)
+                    {
+                        if (sk.Skill == hSk.Skill && sk.Level.Count() >= hSk.Level.Count())
+                        {
+                            _list.Add(mem);
+                        }
+                    }
+                }
+            }
+
+            return _list;
         }
 
-        public Heist AddHeist(HeistVM heist)
+
+        public async Task<Heist> AddHeist(HeistVM heist)
         {
             if (heist.StartTime > heist.EndTime)
             {
@@ -71,7 +104,7 @@ namespace MonesyHeist_App.Data.Services
                 _heist.Skills = _heistSkills;
 
                 _context.Heists.Add(_heist);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 return _heist;
             }
             catch (Exception)
@@ -81,10 +114,10 @@ namespace MonesyHeist_App.Data.Services
 
         }
 
-        public void UpdateHeistSkills(int id, List<HeistSkillsVM> heistSkills)
+        public async Task UpdateHeistSkills(int id, List<HeistSkillsVM> heistSkills)
         {
             List<HeistSkills> _heistSkills = new List<HeistSkills>();
-            var _heist = _context.Heists.FirstOrDefault(m => m.HeistId == id);
+            var _heist = GetHeistById(id);
 
             if (_heist == null) throw new Exception("Heist does not exist");
 
@@ -118,7 +151,12 @@ namespace MonesyHeist_App.Data.Services
 
             _heist.Skills = _heistSkills;
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+        }
+
+        private Heist GetHeistById(int id)
+        {
+            return _context.Heists.FirstOrDefault(x => x.HeistId == id);
         }
     }
 }
