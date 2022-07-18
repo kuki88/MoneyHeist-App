@@ -5,10 +5,44 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace MonesyHeist_App.Migrations
 {
-    public partial class HeistModelMigration : Migration
+    public partial class NewMigration : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Members_Skill_MainSkillSkillId",
+                table: "Members");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Members_MainSkillSkillId",
+                table: "Members");
+
+            migrationBuilder.DropColumn(
+                name: "MainSkillSkillId",
+                table: "Members");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Status",
+                table: "Members",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(int),
+                oldType: "int");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Sex",
+                table: "Members",
+                type: "nvarchar(1)",
+                nullable: false,
+                oldClrType: typeof(int),
+                oldType: "int");
+
+            migrationBuilder.AddColumn<string>(
+                name: "MainSkill",
+                table: "Members",
+                type: "nvarchar(max)",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "Heists",
                 columns: table => new
@@ -18,7 +52,8 @@ namespace MonesyHeist_App.Migrations
                     Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Location = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EndTime = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    EndTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -77,6 +112,44 @@ namespace MonesyHeist_App.Migrations
 
             migrationBuilder.DropTable(
                 name: "Heists");
+
+            migrationBuilder.DropColumn(
+                name: "MainSkill",
+                table: "Members");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "Status",
+                table: "Members",
+                type: "int",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "Sex",
+                table: "Members",
+                type: "int",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(1)");
+
+            migrationBuilder.AddColumn<int>(
+                name: "MainSkillSkillId",
+                table: "Members",
+                type: "int",
+                nullable: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Members_MainSkillSkillId",
+                table: "Members",
+                column: "MainSkillSkillId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Members_Skill_MainSkillSkillId",
+                table: "Members",
+                column: "MainSkillSkillId",
+                principalTable: "Skill",
+                principalColumn: "SkillId");
         }
     }
 }

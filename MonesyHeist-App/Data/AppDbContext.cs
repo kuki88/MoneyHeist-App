@@ -21,5 +21,6 @@ namespace MonesyHeist_App.Data
         public DbSet<Skill> Skill { get; set; }
         public DbSet<Heist> Heists { get; set; }
         public DbSet<HeistSkills> HeistSkills { get; set; }
+        public DbSet<HeistMembers> HeistMembers { get; set; }
     }
 }

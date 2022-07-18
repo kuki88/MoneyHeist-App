@@ -20,8 +20,6 @@ namespace MonesyHeist_App.Controllers
             _memberService = memberService;
         }
 
-
-
         [HttpPost]
         public async Task<IActionResult> AddMember([FromBody]MemberVM member)
         {
@@ -42,6 +40,20 @@ namespace MonesyHeist_App.Controllers
             var members = await _memberService.GetMembers();
             return Ok(members);
         }
+
+        [HttpGet("{memberId}/skills")]
+        public async Task<IActionResult> GetMemberSkills(int memberId)
+        {
+            try
+            {
+                return Ok(_memberService.GetMemberSkills(memberId));
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
         [HttpPut("{memberId}/skills")]
         public async Task<IActionResult> UpdateMemberSkills(int memberId, [FromBody]MemberSkillsVM skills)
         {
@@ -50,9 +62,9 @@ namespace MonesyHeist_App.Controllers
                 var updateMember = await _memberService.UpdateMemberSkills(memberId, skills);
                 return NoContent();
             }
-            catch (MainSkillException msEx)
+            catch (BadRequestException ex)
             {
-                return BadRequest(msEx.Message);
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {

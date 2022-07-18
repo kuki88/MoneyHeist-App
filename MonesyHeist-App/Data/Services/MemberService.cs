@@ -32,7 +32,7 @@ namespace MonesyHeist_App.Data.Services
 
         public async Task<Member> AddMember (MemberVM member)
         {
-            var skillList = new List<Skills>();
+            if (GetMemberByEmail(member.Email) != null) throw new BadRequestException("Member with that email already exists.");
 
             var _member = new Member()
             {
@@ -44,16 +44,31 @@ namespace MonesyHeist_App.Data.Services
                     Level = x.Level,
                 }).ToList(),
                 MainSkill = member.MainSkill,
-                Status = checkStatus(member.Status)? member.Status : throw new Exception("Status not allowed!"),
+                Status = checkStatus(member.Status) ? member.Status : throw new Exception("Status not allowed!"),
                 Sex = checkSex(member.Sex) ? member.Sex : throw new Exception("Sex not allowed!")
             };
-
-            _member.SkillsList = skillList;
 
             _context.Members.Add(_member);
             await _context.SaveChangesAsync();
 
             return _member;
+        }
+
+        public async Task<MemberSkillsVM> GetMemberSkills(int id)
+        {
+            MemberSkillsVM skills = new MemberSkillsVM();
+            var member = _context.Members.FirstOrDefault(m => m.MemberId == id);
+            foreach (var sk in member.SkillsList)
+            {
+                skills.SkillsList.Add(new SkillsVM()
+                {
+                    Level = sk.Level,
+                    Name = sk.Skill.Name
+                });
+            }
+            skills.MainSkill = member.MainSkill;
+
+            return skills;
         }
 
         public async Task<List<Skills>> UpdateMemberSkills (int id, [FromBody]MemberSkillsVM skills)
@@ -63,7 +78,7 @@ namespace MonesyHeist_App.Data.Services
 
             var _member = _context.Members.FirstOrDefault(m => m.MemberId == id);
 
-            if (_member == null) throw new Exception("Member not found");
+            if (_member == null) throw new NotFoundException("Member not found");
 
             foreach (var skillVM in skills.SkillsList)
             {
@@ -91,12 +106,12 @@ namespace MonesyHeist_App.Data.Services
                 }
                 else
                 {
-                    throw new Exception("No skill found");
+                    throw new BadRequestException("No skill found");
                 }
             }
 
             if (hasMainSkill) _member.MainSkill = skills.MainSkill;
-            else throw new MainSkillException("Main skill not in skills array");
+            else throw new BadRequestException("Main skill not in skills array");
 
             await _context.SaveChangesAsync();
 
@@ -141,6 +156,11 @@ namespace MonesyHeist_App.Data.Services
                 if (sex == se) return true;
             }
             return false;
+        }
+
+        private Member GetMemberByEmail(string email)
+        {
+            return _context.Members.FirstOrDefault(x => x.Email.ToLower() == email.ToLower());
         }
     }
 }
