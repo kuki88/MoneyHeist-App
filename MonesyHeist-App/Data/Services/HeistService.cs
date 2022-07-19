@@ -55,32 +55,26 @@ namespace MonesyHeist_App.Data.Services
         }
         public async Task<List<Member>> GetEligibleMembers(int heistId)
         {
-            List<Member> _list = new List<Member>();
+            var members = _context.Members.Where(x => x.Status == "AVAILABLE" || x.Status == "RETIRED").ToList();
             var hei = GetHeistById(heistId);
 
             if (hei == null) throw new NotFoundException("Heist not found!");
 
-            var members = _context.Members.Where(x => x.Status == "AVAILABLE" || x.Status == "RETIRED").ToList();
-            foreach (var mem in members)
-            {
-                if (HasRequiredSkill(mem, hei))
-                {
-                    _list.Add(mem);
-                }
-            }
-
-            return _list;
+            return MatchingMembers(members, hei);
         }
+
         public async Task<string> GetHeistOutcome(int heistId)
         {
+            string outcome = "unknown";
             var heist = GetHeistById(heistId);
-
+            
             if (heist == null) throw new NotFoundException("Heist does not exist!");
             if (heist.Status.ToUpper() != "FINISHED") throw new MethodNotAllowedException("Heist is not finished!");
 
+            var heistMembers = _context.HeistMembers.Where(m => m.HeistId == heist.HeistId).ToList();
+            int requiredNumber = heist.Skills.Count;
 
-            
-            return "";
+            return Outcome(heist, heistMembers, requiredNumber);
         }
 
 
@@ -181,20 +175,7 @@ namespace MonesyHeist_App.Data.Services
             return memberInfos;
         }
 
-
-        //nisam zavrsio
-        public async Task<string> GetOutcome(int id)
-        {
-            string outcome = "";
-            var hei = GetHeistById(id);
-
-            if (hei == null) throw new NotFoundException("Heist not found!");
-
-            if (hei.Status.ToLower() != "FINISHED".ToLower()) throw new MethodNotAllowedException("Heist is not finished!");
-
-            return outcome;
-        }
-
+        
         public async Task UpdateHeistSkills(int id, List<HeistSkillsVM> heistSkills)
         {
             List<HeistSkills> _heistSkills = new List<HeistSkills>();
@@ -319,6 +300,113 @@ namespace MonesyHeist_App.Data.Services
             if (member.Status.ToUpper() == "AVAILABLE" || member.Status.ToUpper() == "RETIRED") return true;
 
             return false;
+        }
+
+        private List<Member> MatchingMembers(List<Member> members, Heist heist)
+        {
+            List<Member> matchingMembers = new List<Member>();
+
+            foreach (var mem in members)
+            {
+                if (HasRequiredSkill(mem, heist))
+                {
+                    matchingMembers.Add(mem);
+                }
+            }
+
+            return matchingMembers;
+        }
+
+        private string Outcome(Heist heist, List<HeistMembers> heistMembers, int numberOfHeistSkills)
+        {
+            var ran = new Random();
+            List<int> randomList = new List<int>();
+
+            string outcome = "unknown";
+            List<Member> members = heistMembers.Select(x => x.Member).ToList();
+            List<Member> matchingMembers = MatchingMembers(members, heist);
+            var mems = _context.Members.ToList();
+
+            int count = _context.HeistMembers.Where(h => h.HeistId == heist.HeistId).ToList().Count;
+
+            if (matchingMembers.Count / count < 0.5)
+            {
+                foreach (var mem in heistMembers)
+                {
+                    _context.Members.FirstOrDefault(x => x.MemberId == mem.MemberId).Status = RandomBool() ? "EXPIRED" : "INCARCERATED"; 
+                }
+                outcome = "FAILED";
+            }
+            if (matchingMembers.Count / count >= 0.5 && matchingMembers.Count / count < 0.75)
+            {
+                if (RandomBool() == false)
+                {
+                    int num = 0;
+
+                    for (int i = 0; i < (2 * members.Count) / 3; i++)
+                    {
+                        do
+                        {
+                            num = RandomNumber(members.Count);
+                        } while (randomList.Contains(num));
+
+                        _context.Members.FirstOrDefault(x => x.MemberId == heistMembers[num].MemberId).Status = RandomBool() ? "EXPIRED" : "INCARCERATED";
+                    }
+
+                    outcome = "FAILED";
+                    randomList.Clear();
+                }
+                else
+                {
+                    int num = 0;
+
+                    for (int i = 0; i < members.Count / 3; i++)
+                    {
+                        do
+                        {
+                            num = RandomNumber(members.Count);
+                        } while (randomList.Contains(num));
+                        _context.Members.FirstOrDefault(x => x.MemberId == heistMembers[num].MemberId).Status = RandomBool() ? "EXPIRED" : "INCARCERATED";
+                    }
+
+                    outcome = "SUCCEEDED";
+                    randomList.Clear();
+                }
+            }
+            if(matchingMembers.Count / count >= 0.75 && matchingMembers.Count / count < 1)
+            {
+                int num = 0;
+
+                for (int i = 0; i < members.Count / 3; i++)
+                {
+                    do{
+                        num = RandomNumber(members.Count);
+                    } while (randomList.Contains(num)) ;
+                    _context.Members.FirstOrDefault(x => x.MemberId == heistMembers[num].MemberId).Status = "INCARCERATED";
+                }
+
+                outcome = "SUCCEEDED";
+            }
+
+            if(matchingMembers.Count / count == 1)
+            {
+                outcome = "SUCCEEDED";
+            }
+
+            return outcome;
+        }
+
+        private int RandomNumber(int granica)
+        {
+            var ran = new Random();
+            return ran.Next(0, granica);
+        }
+
+        private bool RandomBool()
+        {
+            var random = new Random();
+
+            return random.Next(2) == 1;
         }
     }
 }
