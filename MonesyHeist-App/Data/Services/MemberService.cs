@@ -51,14 +51,18 @@ namespace MonesyHeist_App.Data.Services
             _context.Members.Add(_member);
             await _context.SaveChangesAsync();
 
+
+
             return _member;
         }
 
         public async Task<MemberSkillsVM> GetMemberSkills(int id)
         {
             MemberSkillsVM skills = new MemberSkillsVM();
+            List<SkillsVM> memSkills = new List<SkillsVM>();
+            skills.SkillsList = memSkills;
             var member = _context.Members.FirstOrDefault(m => m.MemberId == id);
-            foreach (var sk in member.SkillsList)
+            foreach (var sk in _context.Skills.Where(x => x.MemberId == member.MemberId).ToList())
             {
                 skills.SkillsList.Add(new SkillsVM()
                 {
@@ -109,6 +113,10 @@ namespace MonesyHeist_App.Data.Services
                     throw new BadRequestException("No skill found");
                 }
             }
+
+            _member.SkillsList = _context.Skills.Where(x => x.MemberId == _member.MemberId).ToList();
+            _member.SkillsList.Clear();
+            _member.SkillsList = _newList;
 
             if (hasMainSkill) _member.MainSkill = skills.MainSkill;
             else throw new BadRequestException("Main skill not in skills array");

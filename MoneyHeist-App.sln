@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyHeist-App", "MonesyHeist-App\MoneyHeist-App.csproj", "{70B30671-78FE-4BA0-A5E0-4C4EE2737A15}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MoneyHeist-App", "MonesyHeist-App\MoneyHeist-App.csproj", "{70B30671-78FE-4BA0-A5E0-4C4EE2737A15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xUnitTestProject", "xUnitTestProject\xUnitTestProject.csproj", "{5880A36E-76B5-47C4-B8EE-0FC19A3B09AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{70B30671-78FE-4BA0-A5E0-4C4EE2737A15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70B30671-78FE-4BA0-A5E0-4C4EE2737A15}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70B30671-78FE-4BA0-A5E0-4C4EE2737A15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5880A36E-76B5-47C4-B8EE-0FC19A3B09AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5880A36E-76B5-47C4-B8EE-0FC19A3B09AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5880A36E-76B5-47C4-B8EE-0FC19A3B09AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5880A36E-76B5-47C4-B8EE-0FC19A3B09AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

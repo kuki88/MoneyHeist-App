@@ -1,6 +1,6 @@
-﻿namespace MonesyHeist_App
+﻿namespace MonesyHeist_App.Data
 {
-    public static class Global
+    public class Global
     {
         public static List<string> _statusList = new List<string>()
         {

@@ -158,11 +158,11 @@ namespace MonesyHeist_App.Controllers
         }
 
         [HttpPut("/{heistId}/status")]
-        public async Task<IActionResult> StartHeist(int id)
+        public async Task<IActionResult> StartHeist(int heistId)
         {
             try
             {
-                await _heistService.StartHeist(id);
+                await _heistService.StartHeist(heistId);
                 return Ok();
             }
             catch (Exception ex)
