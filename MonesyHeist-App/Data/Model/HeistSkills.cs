@@ -13,7 +13,6 @@ namespace MonesyHeist_App.Data.Model
         public virtual Skill Skill { get; set; }
         public string Level { get; set; }
         public int Members { get; set; }
-
         [ForeignKey(nameof(Heist))]
         public int HeistId { get; set; }
         public virtual Heist Heist { get; set; }

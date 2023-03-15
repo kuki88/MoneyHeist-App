@@ -3,18 +3,22 @@ using Microsoft.EntityFrameworkCore;
 using MonesyHeist_App.Data.Exceptions;
 using MonesyHeist_App.Data.Model;
 using MonesyHeist_App.Data.ViewModels;
+using System.Net.Mail;
+using System.Net;
 
 namespace MonesyHeist_App.Data.Services
 {
     public class MemberService
     {
         private AppDbContext _context;
+        private readonly IConfiguration _configuration;
         private List<string> SkillNames = new List<string>();
         private List<Skill> SkillList = new List<Skill>();
 
-        public MemberService(AppDbContext context)
+        public MemberService(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
             foreach (var item in _context.Skill.ToList())
             {
                 SkillNames.Add(item.Name);
@@ -22,17 +26,20 @@ namespace MonesyHeist_App.Data.Services
             }
         }
 
-
-
-
         public async Task<List<Member>> GetMembers()
         {
-            return _context.Members.Include(x => x.SkillsList).ToList();
+            List<Member> members = new List<Member>();
+
+            members = _context.Members.Include(x => x.SkillsList).ToList();
+
+            if (members.Count == 0) throw new NotFoundException("There are no members found.");
+
+            return members;
         }
 
         public async Task<Member> AddMember (MemberVM member)
         {
-            if (GetMemberByEmail(member.Email) != null) throw new BadRequestException("Member with that email already exists.");
+            if (await GetMemberByEmail(member.Email) != null) throw new BadRequestException("Member with that email already exists.");
 
             var _member = new Member()
             {
@@ -45,7 +52,7 @@ namespace MonesyHeist_App.Data.Services
                 }).ToList(),
                 MainSkill = member.MainSkill,
                 Status = checkStatus(member.Status) ? member.Status : throw new Exception("Status not allowed!"),
-                Sex = checkSex(member.Sex) ? member.Sex : throw new Exception("Sex not allowed!")
+                Sex = checkSex(member.Sex) ? member.Sex : throw new Exception("Gender not allowed!")
             };
 
             _context.Members.Add(_member);
@@ -61,7 +68,10 @@ namespace MonesyHeist_App.Data.Services
             MemberSkillsVM skills = new MemberSkillsVM();
             List<SkillsVM> memSkills = new List<SkillsVM>();
             skills.SkillsList = memSkills;
-            var member = _context.Members.FirstOrDefault(m => m.MemberId == id);
+            var member = await GetMemberById(id);
+
+            if (member == null) throw new NotFoundException("There is no member found!");
+
             foreach (var sk in _context.Skills.Where(x => x.MemberId == member.MemberId).ToList())
             {
                 skills.SkillsList.Add(new SkillsVM()
@@ -128,7 +138,8 @@ namespace MonesyHeist_App.Data.Services
 
         public async Task DeleteMemberSkill(int id, string skillName)  
         {
-            var _mem = _context.Members.FirstOrDefault(m => m.MemberId == id);
+            var _mem = await GetMemberById(id);
+            //var _mem = _context.Members.FirstOrDefault(m => m.MemberId == id);
             if (_mem != null)
             {
                 try
@@ -146,6 +157,33 @@ namespace MonesyHeist_App.Data.Services
             }
 
             await _context.SaveChangesAsync();
+        }
+        public async Task SendMembersEmail(string toEmail)
+        {
+            string EmailUsername = _configuration["AppSettings:EmailUsername"];
+            string AppPassword = _configuration["AppSettings:AppPassword"];
+
+            SmtpClient client = new SmtpClient("smtp.gmail.com");
+            client.UseDefaultCredentials = false;
+            client.Port = 587;
+            client.EnableSsl = true;
+            client.Credentials = new NetworkCredential(EmailUsername, AppPassword);
+
+            MailMessage message = new MailMessage();
+            message.From = new MailAddress(EmailUsername);
+            message.To.Add(new MailAddress(toEmail));
+            message.Subject = "TestingSubject";
+            message.Body = "I am sending you a testing message from a MoneyHeist app!";
+
+
+            try
+            {
+                client.Send(message);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Couldn't send email " + ex.Message);
+            }
         }
 
         private static bool checkStatus(string status)
@@ -166,9 +204,18 @@ namespace MonesyHeist_App.Data.Services
             return false;
         }
 
-        private Member GetMemberByEmail(string email)
+        private async Task<Member> GetMemberByEmail(string email)
         {
             return _context.Members.FirstOrDefault(x => x.Email.ToLower() == email.ToLower());
+        }
+
+        public async Task<Member> GetMemberById(int id)
+        {
+            var mem = await _context.Members.Include(x => x.SkillsList).FirstOrDefaultAsync(x => x.MemberId == id);
+
+            if (mem == null) throw new NotFoundException("Member not found.");
+
+            return mem;
         }
     }
 }

@@ -4,10 +4,11 @@ using MonesyHeist_App.Data;
 using MonesyHeist_App.Data.Exceptions;
 using MonesyHeist_App.Data.Services;
 using MonesyHeist_App.Data.ViewModels;
+using Org.BouncyCastle.Utilities.Encoders;
 
 namespace MonesyHeist_App.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class HeistController : ControllerBase
     {
@@ -23,14 +24,21 @@ namespace MonesyHeist_App.Controllers
         [HttpGet]
         public async Task<IActionResult> GetHeists()
         {
-            return Ok(await _heistService.GetHeists());
+            try
+            {
+                return Ok(await _heistService.GetHeists());
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
-        [HttpGet("/{heistId}")]
+        [HttpGet("{heistId}")]
         public async Task<IActionResult> GetHeistById(int heistId)
         {
             try
-            {
+            { 
                 return Ok(_heistService.GetHeistById(heistId));
             }
             catch (Exception ex)
@@ -39,7 +47,7 @@ namespace MonesyHeist_App.Controllers
             }
         }
 
-        [HttpGet("/{heistId}/eligible_members")]
+        [HttpGet("{heistId}/eligible_members")]
         public async Task<IActionResult> GetEligibleMembers(int heistId)
         {
             try
@@ -47,13 +55,13 @@ namespace MonesyHeist_App.Controllers
                 var list = await _heistService.GetEligibleMembers(heistId);
                 return Ok(list);
             }
-            catch (Exception ex)
+            catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
         }
 
-        [HttpGet("/{heistId}/members")]
+        [HttpGet("{heistId}/members")]
         public async Task<IActionResult> GetHeistMembers(int heistId)
         {
             try
@@ -61,13 +69,13 @@ namespace MonesyHeist_App.Controllers
                 var members = await _heistService.GetHeistMembers(heistId);
                 return Ok(members);
             }
-            catch (Exception ex)
+            catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
         }
 
-        [HttpGet("/{heistId}/skills")]
+        [HttpGet("{heistId}/skills")]
         public async Task<IActionResult> GetHeistSkills(int heistId)
         {
             try
@@ -75,13 +83,13 @@ namespace MonesyHeist_App.Controllers
                 var skills = await _heistService.GetHeistSkills(heistId);
                 return Ok(skills);
             }
-            catch (Exception ex)
+            catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
         }
 
-        [HttpGet("/{heistId}/status")]
+        [HttpGet("{heistId}/status")]
         public async Task<IActionResult> GetHeistStatus(int heistId)
         {
             try
@@ -95,7 +103,7 @@ namespace MonesyHeist_App.Controllers
             }
         }
 
-        [HttpGet("/{heistId}/outcome")]
+        [HttpGet("{heistId}/outcome")]
         public async Task<IActionResult> GetHeistOutcome(int heistId)
         {
             try
@@ -105,14 +113,13 @@ namespace MonesyHeist_App.Controllers
             }
             catch (NotFoundException ex)
             {
-                return NotFound(ex);
+                return NotFound(ex.Message);
             }
             catch (MethodNotAllowedException ex)
             {
-                return StatusCode(StatusCodes.Status405MethodNotAllowed);
+                return StatusCode(StatusCodes.Status405MethodNotAllowed, ex);
             }
         }
-
 
         [HttpPost]
         public async Task<IActionResult> AddHeist([FromBody] HeistVM heist)
@@ -122,28 +129,35 @@ namespace MonesyHeist_App.Controllers
                 var _heist = await _heistService.AddHeist(heist);
                 return Ok(_heist);
             }
-            catch (Exception ex)
+            catch (BadRequestException ex)
             {
                 return BadRequest(ex.Message);
             }
         }
 
-        [HttpPut("/{heistId}/members")]
+        [HttpPut("{heistId}/members")]
         public async Task<IActionResult> PutMembersInHeist(int heistId, List<string> members)
         {
             try
             {
-                _heistService.PutMembersInHeist(heistId, members);
+                await _heistService.PutMembersInHeist(heistId, members);
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (MethodNotAllowedException ex)
             {
-
-                throw;
+                return StatusCode(StatusCodes.Status405MethodNotAllowed);
+            }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
         }
 
-        [HttpPut("/{id}/skills")]
+        [HttpPut("{id}/skills")]
         public async Task<IActionResult> UpdateHeistSkills(int id, [FromBody] List<HeistSkillsVM> heistSkills)
         {
             try
@@ -151,13 +165,17 @@ namespace MonesyHeist_App.Controllers
                 await _heistService.UpdateHeistSkills(id, heistSkills);
                 return NoContent();
             }
+            catch (MethodNotAllowedException ex)
+            {
+                return StatusCode(StatusCodes.Status405MethodNotAllowed, ex.Message);
+            }
             catch (Exception ex)
             {
-                return NotFound(ex.Message);
+                return BadRequest(ex.Message);
             }
         }
 
-        [HttpPut("/{heistId}/status")]
+        [HttpPut("{heistId}/status")]
         public async Task<IActionResult> StartHeist(int heistId)
         {
             try
@@ -165,7 +183,7 @@ namespace MonesyHeist_App.Controllers
                 await _heistService.StartHeist(heistId);
                 return Ok();
             }
-            catch (Exception ex)
+            catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }

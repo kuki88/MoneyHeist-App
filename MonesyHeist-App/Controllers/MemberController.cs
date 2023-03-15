@@ -7,7 +7,7 @@ using MonesyHeist_App.Data.ViewModels;
 
 namespace MonesyHeist_App.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class MemberController : ControllerBase
     {
@@ -28,6 +28,10 @@ namespace MonesyHeist_App.Controllers
                 await _memberService.AddMember(member);
                 return Ok(member);
             }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
@@ -38,7 +42,41 @@ namespace MonesyHeist_App.Controllers
         public async Task<IActionResult> GetMembers()
         {
             var members = await _memberService.GetMembers();
-            return Ok(members);
+            try
+            {
+                return Ok(members);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetMemberById(int id)
+        {
+            try
+            {
+                return Ok(await _memberService.GetMemberById(id));
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [HttpGet("notify-members/{userEmail}")]
+        public async Task<IActionResult> SendMembersEmail(string userEmail)
+        {
+            await _memberService.SendMembersEmail(userEmail);
+            try
+            {
+                return Ok("Mail was sent to member.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("{memberId}/skills")]
@@ -46,9 +84,9 @@ namespace MonesyHeist_App.Controllers
         {
             try
             {
-                return Ok(_memberService.GetMemberSkills(memberId));
+                return Ok(await _memberService.GetMemberSkills(memberId));
             }
-            catch (Exception ex)
+            catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }

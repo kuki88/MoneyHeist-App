@@ -30,23 +30,23 @@ namespace MonesyHeist_App.Data.Services
 
         public async Task<List<Heist>> GetHeists()
         {
-            return _context.Heists.Include(x => x.Skills).ToList();
+            List<Heist> list = await _context.Heists.Include(x => x.Skills).ToListAsync();
+
+            if (list.Count == 0) throw new NotFoundException("There are no Heists in database!");
+            return list;
         }
         public async Task<List<Member>> GetEligibleMembers(int heistId)
         {
-            var members = _context.Members.Include(x => x.SkillsList).Where(x => x.Status == "AVAILABLE" || x.Status == "RETIRED").ToList();
-            var hei = GetHeistById(heistId);
+            var members = await _context.Members.Include(x => x.SkillsList).Where(x => x.Status == "AVAILABLE" || x.Status == "RETIRED").ToListAsync();
+            var hei = await GetHeistById(heistId);
 
-            if (hei == null) throw new NotFoundException("Heist not found!");
 
             return MatchingMembers(members, hei);
         }
         public async Task<string> GetHeistOutcome(int heistId)
         {
-            string outcome = "unknown";
-            var heist = GetHeistById(heistId);
-            
-            if (heist == null) throw new NotFoundException("Heist does not exist!");
+            var heist = await GetHeistById(heistId);
+
             if (heist.Status.ToUpper() != "FINISHED") throw new MethodNotAllowedException("Heist is not finished!");
 
             var heistMembers = _context.HeistMembers.Where(m => m.HeistId == heist.HeistId).ToList();
@@ -99,35 +99,48 @@ namespace MonesyHeist_App.Data.Services
                 await _context.SaveChangesAsync();
                 return _heist;
             }
-            catch (Exception)
+            catch (BadRequestException ex)
             {
-                throw new Exception("Unexpected error");
+                throw new BadRequestException("Unexpected error" + ex);
             }
 
         }
         public async Task<string> GetHeistStatus(int heistId)
         {
-            var heist = GetHeistById(heistId);
+            var heist = await GetHeistById(heistId);
             return heist.Status;
         }
         public async Task<List<HeistSkillsVM>> GetHeistSkills(int heistId)
         {
-            var heist = GetHeistById(heistId);
-
-            List<HeistSkillsVM> heistSkillsVMs = heist.Skills.ToList().Select(x => new HeistSkillsVM()
+            try
             {
-                Level = x.Level,
-                Skill = x.Skill.Name,
-                Members = x.Members
-            }).ToList();
+                var heist = await GetHeistById(heistId);
 
-            return heistSkillsVMs;
+                var skills = heist.Skills.ToList();
+
+                List<HeistSkillsVM> heistSkillsVMs = heist.Skills.ToList().Select(x => new HeistSkillsVM()
+                {
+                    Level = x.Level,
+                    Skill = x.Skill.Name,
+                    Members = x.Members
+                }).ToList();
+
+                if (heistSkillsVMs.Count == 0) throw new NotFoundException("There are no Heist skills found!");
+
+                return heistSkillsVMs;
+            }
+            catch (NotFoundException ex)
+            {
+                throw ex;
+            }
+
         }
         public async Task StartHeist(int id)
         {
-            var hei = GetHeistById(id);
+            var hei = await GetHeistById(id);
+
             hei.Status = "IN_PROGRESS";
-            _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
         public async Task<List<MemberInfoVM>> GetHeistMembers(int heistId)
         {
@@ -146,22 +159,17 @@ namespace MonesyHeist_App.Data.Services
                 });
             }
 
+            if (memberInfos.Count == 0) throw new NotFoundException("There are no members found!");
+
             return memberInfos;
         }
         public async Task UpdateHeistSkills(int id, List<HeistSkillsVM> heistSkills)
         {
             List<HeistSkills> _heistSkills = new List<HeistSkills>();
-            var _heist = GetHeistById(id);
+            var _heist = await GetHeistById(id);
 
-            if (_heist== null)
-            {
-                throw new NotFoundException("Heist does not exist!");
-            }
 
-            if (_heist.Status.ToLower() == "IN_PROGRESS".ToLower())
-            {
-                throw new MethodNotAllowedException("The heist has already started!");
-            }
+            if (_heist.Status.ToUpper() == "IN_PROGRESS") throw new MethodNotAllowedException("The heist has already started!");
 
             foreach (var heist in heistSkills)
             {
@@ -197,9 +205,7 @@ namespace MonesyHeist_App.Data.Services
         }
         public async Task PutMembersInHeist(int heistId, List<string> members)
         {
-            var heist = GetHeistById(heistId);
-
-            if (heist == null) throw new NotFoundException("Heist does not exist!");
+            var heist = await GetHeistById(heistId);
 
             if (heist.Status.ToUpper() != "PLANNING") throw new MethodNotAllowedException("Heist status is not \"PLANNING\".");
 
@@ -211,24 +217,27 @@ namespace MonesyHeist_App.Data.Services
 
                 if (!IsAvailable(member)) throw new BadRequestException("Member is not available for this heist.");
 
-                if (member != null)
-                {
-                    if (!HasRequiredSkill(member, heist))
-                    {
-                        throw new BadRequestException("Member + " + member.Name + " does not have required skills!");
-                    }
+                if (member == null) throw new NotFoundException("Member " + mem + " does not exist");
+                
+                if (!HasRequiredSkill(member, heist)) throw new BadRequestException("Member + " + member.Name + " does not have required skills!");
 
-                    _context.HeistMembers.Add(new HeistMembers()
-                    {
-                        Heist = heist,
-                        Member = member,
-                    });
-                }
-                else throw new NotFoundException("Member does not exist!");
+                _context.HeistMembers.Add(new HeistMembers()
+                {
+                    Heist = heist,
+                    Member = member,
+                });
             }
 
             heist.Status = "Ready";
             await _context.SaveChangesAsync();
+        }
+        public async Task<Heist> GetHeistById(int id)
+        {
+            var heist = await _context.Heists.Include(x => x.Skills).ThenInclude(x => x.Skill).FirstOrDefaultAsync(x => x.HeistId == id);
+
+            if (heist == null) throw new NotFoundException("There is no heist found.");
+
+            return heist;
         }
         private bool HasRequiredSkill(Member mem, Heist heist)
         {
@@ -236,21 +245,13 @@ namespace MonesyHeist_App.Data.Services
             {
                 foreach (var memSkill in mem.SkillsList)
                 {
-                    if (memSkill.Skill == Skill.Skill && memSkill.Level.Length >= Skill.Level.Length)
+                    if (memSkill.SkillId == Skill.SkillId && memSkill.Level.Length >= Skill.Level.Length)
                     {
                         return true;
                     }
                 }
             }
             return false;
-        }
-        public Heist GetHeistById(int id)
-        {
-            var heist = _context.Heists.Include(x => x.Skills).FirstOrDefault(x => x.HeistId == id);
-
-            if (heist == null) throw new Exception("Heist does not exist!");
-
-            return heist;
         }
         private Member MemberExists(string memberName)
         {
@@ -280,6 +281,8 @@ namespace MonesyHeist_App.Data.Services
                     matchingMembers.Add(mem);
                 }
             }
+
+            if (matchingMembers.Count == 0) throw new NotFoundException("There are no matching members found.");
 
             return matchingMembers;
         }
@@ -340,7 +343,7 @@ namespace MonesyHeist_App.Data.Services
                     randomList.Clear();
                 }
             }
-            if(matchingMembers.Count / count >= 0.75 && matchingMembers.Count / count < 1)
+            if (matchingMembers.Count / count >= 0.75 && matchingMembers.Count / count < 1)
             {
                 int num = 0;
 
@@ -355,7 +358,7 @@ namespace MonesyHeist_App.Data.Services
                 outcome = "SUCCEEDED";
             }
 
-            if(matchingMembers.Count / count == 1)
+            if (matchingMembers.Count / count == 1)
             {
                 outcome = "SUCCEEDED";
             }
